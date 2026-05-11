@@ -7,6 +7,8 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
+    // 如果你要发布到 GitHub Pages，请取消下面 base 这一行的注释，并将 'your-repo-name' 改为你的仓库名称
+    // base: '/your-repo-name/',
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
