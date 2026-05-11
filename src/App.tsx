@@ -3,225 +3,222 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { soundService } from './services/soundService';
 import { 
-  SquareStack, 
-  RotateCcw, 
-  Plus, 
-  Trophy, 
-  Layers,
-  Heart,
-  Diamond,
-  Club,
-  Spade
+  Trash2, 
+  Archive, 
+  Briefcase, 
+  Luggage as SuitcaseIcon, 
+  Cpu, 
+  Sword, 
+  Plane, 
+  Package, 
+  PlusSquare, 
+  Monitor, 
+  Lock, 
+  Server, 
+  ShieldCheck, 
+  Bird,
+  HelpCircle
 } from 'lucide-react';
 
-// --- Types ---
-type Suit = 'Hearts' | 'Diamonds' | 'Clubs' | 'Spades';
-type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
-
-interface CardData {
-  id: string;
-  suit: Suit;
-  rank: Rank;
+// --- 类型定义 ---
+interface CardItem {
+  name: string;
+  probability: number;
+  icon: React.ReactNode;
+  color: string;
+  borderColor: string;
 }
 
-// --- Utilities ---
-const SUITS: Suit[] = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
-const RANKS: Rank[] = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+interface ActiveCard {
+  instanceId: string;
+  item: CardItem;
+  status: 'back' | 'front';
+}
 
-const createDeck = (): CardData[] => {
-  const deck: CardData[] = [];
-  SUITS.forEach((suit) => {
-    RANKS.forEach((rank) => {
-      deck.push({
-        id: `${rank}-${suit}`,
-        suit,
-        rank,
-      });
-    });
-  });
-  return deck.sort(() => Math.random() - 0.5);
-};
+// --- 配置数据 ---
+const ITEM_POOL: CardItem[] = [
+  { name: '垃圾桶', probability: 0.25, icon: <Trash2 />, color: 'bg-zinc-100', borderColor: 'border-zinc-400' },
+  { name: '抽屉柜', probability: 0.14, icon: <Archive />, color: 'bg-amber-50', borderColor: 'border-amber-400' },
+  { name: '手提箱', probability: 0.10, icon: <Briefcase />, color: 'bg-blue-50', borderColor: 'border-blue-400' },
+  { name: '高级行李箱', probability: 0.10, icon: <SuitcaseIcon />, color: 'bg-purple-50', borderColor: 'border-purple-400' },
+  { name: '电脑机箱', probability: 0.08, icon: <Cpu />, color: 'bg-slate-100', borderColor: 'border-slate-500' },
+  { name: '武器箱', probability: 0.05, icon: <Sword />, color: 'bg-red-50', borderColor: 'border-red-600' },
+  { name: '航空储物箱', probability: 0.03, icon: <Plane />, color: 'bg-sky-100', borderColor: 'border-sky-500' },
+  { name: '快递箱', probability: 0.09, icon: <Package />, color: 'bg-yellow-50', borderColor: 'border-yellow-600' },
+  { name: '医疗物资堆', probability: 0.03, icon: <PlusSquare />, color: 'bg-green-50', borderColor: 'border-green-500' },
+  { name: '电脑', probability: 0.015, icon: <Monitor />, color: 'bg-indigo-50', borderColor: 'border-indigo-400' },
+  { name: '小保险箱', probability: 0.015, icon: <Lock />, color: 'bg-orange-50', borderColor: 'border-orange-500' },
+  { name: '服务器', probability: 0.015, icon: <Server />, color: 'bg-cyan-50', borderColor: 'border-cyan-500' },
+  { name: '大保险箱', probability: 0.005, icon: <ShieldCheck />, color: 'bg-rose-100', borderColor: 'border-rose-700' },
+  { name: '鸟窝', probability: 0.08, icon: <Bird />, color: 'bg-emerald-50', borderColor: 'border-emerald-400' },
+];
 
-const getSuitIcon = (suit: Suit) => {
-  switch (suit) {
-    case 'Hearts': return <Heart className="w-5 h-5 text-red-500 fill-red-500" />;
-    case 'Diamonds': return <Diamond className="w-5 h-5 text-red-500 fill-red-500" />;
-    case 'Clubs': return <Club className="w-5 h-5 text-zinc-900 fill-zinc-900" />;
-    case 'Spades': return <Spade className="w-5 h-5 text-zinc-900 fill-zinc-900" />;
+// --- 辅助函数 ---
+const getRandomItem = (): CardItem => {
+  const rand = Math.random();
+  let cumulative = 0;
+  for (const item of ITEM_POOL) {
+    cumulative += item.probability;
+    if (rand < cumulative) return item;
   }
+  return ITEM_POOL[0];
 };
 
-// --- Components ---
-
-const Card = ({ card, index, isNew }: { card: CardData; index: number; isNew?: boolean }) => {
-  return (
-    <motion.div
-      layoutId={card.id}
-      initial={isNew ? { y: 100, opacity: 0, scale: 0.8, rotate: -15 } : false}
-      animate={{ y: 0, opacity: 1, scale: 1, rotate: index * 2 - 5 }}
-      exit={{ scale: 0.5, opacity: 0 }}
-      whileHover={{ y: -15, scale: 1.05, transition: { duration: 0.2 } }}
-      className="relative w-32 h-48 bg-white rounded-xl shadow-lg border border-zinc-200 flex flex-col justify-between p-3 cursor-pointer shrink-0 select-none"
-      style={{
-        zIndex: index,
-        marginLeft: index === 0 ? 0 : '-3rem',
-      }}
-    >
-      <div className="flex flex-col items-start">
-        <span className="text-xl font-bold leading-none">{card.rank}</span>
-        {getSuitIcon(card.suit)}
-      </div>
-      
-      <div className="flex justify-center items-center">
-        <div className="scale-150">
-          {getSuitIcon(card.suit)}
-        </div>
-      </div>
-      
-      <div className="flex flex-col items-end rotate-180">
-        <span className="text-xl font-bold leading-none">{card.rank}</span>
-        {getSuitIcon(card.suit)}
-      </div>
-    </motion.div>
-  );
+const getNewCardCount = (): number => {
+  const rand = Math.random();
+  if (rand < 0.25) return 2;
+  if (rand < 0.40) return 3; // 0.25 + 0.15
+  return 4; // 剩下的 60%
 };
 
 export default function App() {
-  const [deck, setDeck] = useState<CardData[]>(() => createDeck());
-  const [hand, setHand] = useState<CardData[]>([]);
-  const [history, setHistory] = useState<CardData[]>([]);
+  const [cards, setCards] = useState<ActiveCard[]>([]);
 
-  const drawCard = useCallback(() => {
-    if (deck.length === 0) return;
-    
-    const newDeck = [...deck];
-    const card = newDeck.pop()!;
-    setDeck(newDeck);
-    setHand((prev) => [...prev, card]);
-  }, [deck]);
+  // 生成新卡牌
+  const handleGenerate = useCallback(() => {
+    soundService.playWhoosh();
+    const count = getNewCardCount();
+    const newCards: ActiveCard[] = Array.from({ length: count }).map(() => ({
+      instanceId: Math.random().toString(36).substr(2, 9),
+      item: getRandomItem(),
+      status: 'back',
+    }));
+    setCards(newCards);
+  }, []);
 
-  const resetGame = () => {
-    setDeck(createDeck());
-    setHand([]);
-    setHistory([]);
-  };
-
-  const playCard = (cardId: string) => {
-    const card = hand.find((c) => c.id === cardId);
-    if (!card) return;
-    
-    setHand((prev) => prev.filter((c) => c.id !== cardId));
-    setHistory((prev) => [card, ...prev].slice(0, 5));
+  // 点击卡牌逻辑
+  const handleCardClick = (id: string) => {
+    setCards((prev) => {
+      const cardIdx = prev.findIndex(c => c.instanceId === id);
+      if (cardIdx === -1) return prev;
+      
+      const card = prev[cardIdx];
+      
+      if (card.status === 'back') {
+        // 第一阶段：翻转到正面
+        soundService.playFlip();
+        const next = [...prev];
+        next[cardIdx] = { ...card, status: 'front' };
+        return next;
+      } else {
+        // 第二阶段：消失
+        soundService.playDissolve();
+        return prev.filter(c => c.instanceId !== id);
+      }
+    });
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans p-4 md:p-8 flex flex-col items-center">
-      {/* Header */}
-      <header className="w-full max-w-4xl flex justify-between items-center mb-12">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 rounded-lg text-white">
-            <SquareStack className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tighter uppercase italic">Card Duel</h1>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">Deck Remaining</span>
-            <span className="font-mono text-xl font-medium">{deck.length}</span>
-          </div>
-          <button 
-            onClick={resetGame}
-            className="p-2 hover:bg-zinc-200 rounded-full transition-colors"
-            title="Reset Game"
-          >
-            <RotateCcw className="w-5 h-5 text-zinc-600" />
-          </button>
-        </div>
-      </header>
-
-      <main className="w-full max-w-5xl flex flex-col gap-12 items-center flex-1">
-        {/* Play Area / History */}
-        <section className="relative w-full h-64 flex justify-center items-center">
-          <div className="absolute inset-0 border-2 border-dashed border-zinc-200 rounded-3xl -z-10 bg-white/50" />
-          <AnimatePresence mode="popLayout text-center">
-            {history.length > 0 ? (
-              <div className="flex items-center gap-4">
-                {history.map((card, i) => (
-                  <motion.div
-                    key={card.id}
-                    initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                    animate={{ 
-                      opacity: 1 - (i * 0.2), 
-                      scale: 1 - (i * 0.05),
-                      x: -i * 10,
-                      y: 0,
-                      zIndex: history.length - i
-                    }}
-                    className="absolute"
-                  >
-                    <Card card={card} index={0} />
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center text-zinc-300 gap-2">
-                <Trophy className="w-12 h-12" />
-                <p className="font-medium">Play a card from your hand</p>
-              </div>
-            )}
-          </AnimatePresence>
-        </section>
-
-        {/* Hand Area */}
-        <section className="w-full flex flex-col items-center gap-8 mt-auto mb-10">
-          <div className="flex justify-center w-full overflow-x-auto pb-8 px-8 min-h-[220px]">
-            <AnimatePresence>
-              {hand.map((card, index) => (
-                <div key={card.id} onClick={() => playCard(card.id)}>
-                  <Card card={card} index={index} isNew />
-                </div>
-              ))}
-            </AnimatePresence>
-            
-            {hand.length === 0 && (
-              <div className="flex items-center justify-center p-12 border-2 border-dashed border-zinc-200 rounded-xl w-32 h-48 bg-white/30 text-zinc-300">
-                <span className="text-sm font-medium italic">Empty Hand</span>
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={drawCard}
-              disabled={deck.length === 0}
-              className="flex items-center gap-2 px-8 py-4 bg-zinc-900 text-white rounded-full font-bold hover:bg-zinc-800 disabled:bg-zinc-300 disabled:cursor-not-allowed shadow-xl transition-all hover:scale-105 active:scale-95"
-            >
-              <Plus className="w-5 h-5" />
-              Draw Card
-            </button>
-            <div className="h-10 w-px bg-zinc-200 mx-2" />
-            <div className="flex items-center gap-2 p-2 bg-white rounded-full shadow-sm border border-zinc-200 px-4">
-              <Layers className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-bold">{hand.length} Hand</span>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Background Decor */}
-      <div className="fixed bottom-0 left-0 p-8 opacity-10 pointer-events-none select-none">
-        <h2 className="text-[15rem] leading-none font-black italic tracking-tighter">DUEL</h2>
+    <div className="min-h-screen bg-zinc-200 p-8 flex flex-col items-center font-sans overflow-hidden">
+      {/* 核心按钮区域 */}
+      <div className="mt-8 mb-12">
+        <button
+          onClick={handleGenerate}
+          className="px-16 py-8 bg-zinc-900 text-white rounded-2xl font-black text-4xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:bg-zinc-800 active:scale-95 transition-all tracking-widest border-b-8 border-zinc-950 hover:border-b-4 hover:translate-y-1"
+          id="generate-button"
+        >
+          零号大坝
+        </button>
       </div>
+
+      {/* 卡牌展示区域 - 使用 LayoutGroup 确保平滑补位 */}
+      <div className="w-full max-w-6xl flex justify-center items-start min-h-[400px]">
+        <div className="flex gap-6 flex-nowrap p-4">
+          <AnimatePresence mode="popLayout">
+            {cards.map((card) => (
+              <motion.div
+                key={card.instanceId}
+                layout
+                initial={{ opacity: 0, y: 100, scale: 0, rotate: -45, filter: 'blur(20px)' }}
+                animate={{ opacity: 1, y: 0, scale: 1, rotate: 0, filter: 'blur(0px)' }}
+                exit={{ 
+                  opacity: 0, 
+                  scale: 1.5, 
+                  y: -100, 
+                  rotate: 20, 
+                  filter: 'blur(30px)',
+                  transition: { duration: 0.4, ease: "easeIn" } 
+                }}
+                transition={{ 
+                  type: 'spring', 
+                  stiffness: 400, 
+                  damping: 30,
+                  layout: { duration: 0.3 } 
+                }}
+                className="shrink-0"
+              >
+                <div
+                  onClick={() => handleCardClick(card.instanceId)}
+                  className="relative w-44 h-64 cursor-pointer preserve-3d group"
+                  style={{ perspective: '1000px' }}
+                >
+                  <motion.div
+                    className="w-full h-full relative"
+                    initial={false}
+                    animate={{ rotateY: card.status === 'back' ? 0 : 180 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
+                    {/* 卡背 (Card Back) */}
+                    <div className="absolute inset-0 backface-hidden w-full h-full bg-zinc-800 rounded-2xl border-4 border-zinc-700 flex flex-col items-center justify-center text-zinc-600 shadow-2xl">
+                      <div className="w-full h-full border-2 border-zinc-700/50 rounded-xl m-2 flex items-center justify-center relative overflow-hidden">
+                         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent scale-150" />
+                         <HelpCircle className="w-20 h-20 opacity-20 rotate-12" />
+                      </div>
+                    </div>
+
+                    {/* 卡面 (Card Front) */}
+                    <div 
+                      className={`absolute inset-0 backface-hidden w-full h-full rounded-2xl border-4 flex flex-col items-center justify-between p-5 bg-white shadow-2xl rotate-y-180 ${card.item.borderColor} ${card.item.color}`}
+                    >
+                      <div className="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        <span>COLLECTION</span>
+                        <span>{Math.floor(card.item.probability * 100)}%</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center gap-4 flex-1 justify-center">
+                        <div className="p-4 bg-white/50 rounded-full shadow-inner scale-[2.2] text-zinc-900">
+                          {card.item.icon}
+                        </div>
+                        <span className="text-xl font-black text-zinc-900 mt-8 text-center tracking-tight leading-none px-2 py-1 border-b-2 border-zinc-900/10">
+                          {card.item.name}
+                        </span>
+                      </div>
+
+                      <div className="w-full text-center py-2 bg-black/5 rounded-lg">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase">A-7 Type</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* 底部装饰 */}
+      <div className="fixed bottom-0 left-0 w-full p-12 flex justify-between items-end pointer-events-none opacity-5 select-none">
+        <h2 className="text-[12rem] leading-none font-black italic tracking-tighter -mb-10">ZERO</h2>
+        <h2 className="text-[12rem] leading-none font-black italic tracking-tighter -mb-10">DAM</h2>
+      </div>
+
+      <style>{`
+        .backface-hidden {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+          transform: rotateY(180deg);
+        }
+        .preserve-3d {
+          transform-style: preserve-3d;
+        }
+      `}</style>
     </div>
   );
 }
