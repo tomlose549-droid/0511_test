@@ -7,7 +7,8 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss()],
-    base: '/0511_test/',
+    // 强制生产环境使用仓库名为路径前缀
+    base: mode === 'production' ? '/0511_test/' : '/',
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },

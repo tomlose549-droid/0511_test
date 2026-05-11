@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: AIS-Auto-Deploy
 
 on:
   push:
@@ -8,6 +8,11 @@ permissions:
   contents: read
   pages: write
   id-token: write
+
+# 确保同一时间只有一个部署在运行
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
