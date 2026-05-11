@@ -9,7 +9,6 @@ permissions:
   pages: write
   id-token: write
 
-# 确保同一时间只有一个部署在运行
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -23,8 +22,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
       - name: Install dependencies
         run: npm install
       - name: Build
